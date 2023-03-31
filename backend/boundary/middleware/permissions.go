@@ -1,13 +1,13 @@
 package middleware
 
 import (
+	"backend/models"
+	"backend/usecase/agenda"
+	"backend/usecase/users"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"net/http"
-	"ocall/backend/models"
-	"ocall/backend/usecase/agenda"
-	"ocall/backend/usecase/users"
 )
 
 type PermissionsMiddleware struct {

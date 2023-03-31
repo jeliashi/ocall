@@ -1,13 +1,13 @@
 package handler
 
 import (
+	"backend/boundary/middleware"
+	"backend/boundary/presentor"
+	"backend/models"
+	"backend/usecase/agenda"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
-	"ocall/backend/boundary/middleware"
-	"ocall/backend/boundary/presentor"
-	"ocall/backend/models"
-	"ocall/backend/usecase/agenda"
 )
 
 type AgendaController struct {

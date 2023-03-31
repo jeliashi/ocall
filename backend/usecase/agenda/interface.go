@@ -1,10 +1,10 @@
 package agenda
 
 import (
+	"backend/models"
 	"context"
 	"github.com/google/uuid"
 	gormGIS "github.com/nferruzzi/gormgis"
-	"ocall/backend/models"
 	"time"
 )
 
@@ -23,13 +23,12 @@ type Repository interface {
 	GetEventsByPerformer(ctx context.Context, performerID uuid.UUID) ([]models.Event, error)
 	GetAllEvents(ctx context.Context, startTime time.Time, endTime time.Time, centerPoint gormGIS.GeoPoint, distanceKM float32) ([]models.Event, error)
 	GetApplicationsByPerformer(ctx context.Context, performerID uuid.UUID) ([]models.Application, error)
-	GetApplicationsByProducer(ctx context.Context, producerID uuid.UUID) ([]models.Application, error)
 
 	SaveApplication(ctx context.Context, applicationID uuid.UUID) error
 	UnSaveApplication(ctx context.Context, applicationID uuid.UUID) error
 	UpdateApplicationStatus(ctx context.Context, applicationID uuid.UUID, status models.ApplicationStatus) error
 	UpdateEventApplicationStatus(ctx context.Context, eventID uuid.UUID, status models.EventApplicationStatus) error
 
-	CreateTag(ctx context.Context, tag models.Tag) error
+	CreateTag(ctx context.Context, tag models.Tag) (uint, error)
 	DeleteTag(ctx context.Context, tag models.Tag) error
 }

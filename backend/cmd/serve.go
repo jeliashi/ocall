@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"backend/boundary/handler"
+	"backend/data/repository"
+	"backend/usecase/agenda"
+	"backend/usecase/users"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
@@ -8,12 +12,8 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"ocall/backend/boundary/handler"
-	"ocall/backend/data/repository"
-	"ocall/backend/usecase/agenda"
-	"ocall/backend/usecase/users"
 
-	"ocall/backend/boundary/middleware"
+	"backend/boundary/middleware"
 	"unsafe"
 )
 
@@ -45,8 +45,8 @@ func main() {
 	}
 	uRepo := repository.NewUserRepo(orm)
 	aRepo := repository.NewAgendaRepo(orm)
-	uService := users.NewService(uRepo)
-	aService := agenda.NewService(aRepo)
+	uService := users.NewService(&uRepo)
+	aService := agenda.NewService(&aRepo)
 	permissionMiddleWare := middleware.PermissionsMiddleware{
 		uService, aService,
 	}

@@ -1,12 +1,12 @@
 package agenda
 
 import (
+	"backend/models"
 	"context"
 	"fmt"
 	"github.com/google/uuid"
 	gormGIS "github.com/nferruzzi/gormgis"
 	"github.com/pkg/errors"
-	"ocall/backend/models"
 	"time"
 )
 
@@ -102,13 +102,6 @@ func (s *Service) GetApplicationsByPerfomer(ctx context.Context, performerID uui
 	}
 	return applications, nil
 }
-func (s *Service) GetApplicationsByProducer(ctx context.Context, producerID uuid.UUID) ([]models.Application, error) {
-	applications, err := s.repo.GetApplicationsByProducer(ctx, producerID)
-	if err != nil {
-		return nil, errors.Wrap(err, "db error")
-	}
-	return applications, nil
-}
 func (s *Service) SaveApplication(ctx context.Context, applicationID uuid.UUID) error {
 	application, err := s.repo.GetApplication(ctx, applicationID)
 	if err != nil {
@@ -168,11 +161,12 @@ func (s *Service) UpdateEventApplicationStatus(
 	return nil
 }
 
-func (s *Service) CreateTag(ctx context.Context, tag models.Tag) error {
-	if err := s.repo.CreateTag(ctx, tag); err != nil {
-		return errors.Wrap(err, "db error")
+func (s *Service) CreateTag(ctx context.Context, tag models.Tag) (uint, error) {
+	id, err := s.repo.CreateTag(ctx, tag)
+	if err != nil {
+		return 0, errors.Wrap(err, "db error")
 	}
-	return nil
+	return id, nil
 }
 func (s *Service) DeleteTag(ctx context.Context, tag models.Tag) error {
 	if err := s.repo.DeleteTag(ctx, tag); err != nil {

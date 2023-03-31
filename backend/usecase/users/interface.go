@@ -1,9 +1,9 @@
 package users
 
 import (
+	"backend/models"
 	"context"
 	"github.com/google/uuid"
-	"ocall/backend/models"
 )
 
 type Repository interface {

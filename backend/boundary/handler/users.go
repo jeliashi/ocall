@@ -1,14 +1,14 @@
 package handler
 
 import (
+	"backend/boundary/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
-	"ocall/backend/boundary/middleware"
 
-	"ocall/backend/boundary/presentor"
-	"ocall/backend/models"
-	"ocall/backend/usecase/users"
+	"backend/boundary/presentor"
+	"backend/models"
+	"backend/usecase/users"
 )
 
 type UserController struct {

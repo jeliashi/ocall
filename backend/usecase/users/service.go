@@ -1,10 +1,10 @@
 package users
 
 import (
+	"backend/models"
 	"context"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"ocall/backend/models"
 )
 
 type Service struct {

@@ -99,13 +99,13 @@ func (r *UserRepo) GetProducerByEventID(ctx context.Context, eventID uuid.UUID) 
 	return event.Producer, nil
 }
 
-func (r *UserRepo) GetVenueByEventID(ctx context.Context, eventID uuid.UUID) (*models.Profile, error) {
+func (r *UserRepo) GetVenueByEventID(ctx context.Context, eventID uuid.UUID) (models.Profile, error) {
 	var event models.Event
 	result := r.orm.WithContext(ctx).Preload("Venue").First(&event, eventID)
 	if err := models.ParseGormErrors(result.Error, "events", eventID.String()); err != nil {
-		return &models.Profile{}, err
+		return models.Profile{}, err
 	}
-	return event.Venue, nil
+	return *event.Venue, nil
 }
 
 func (r *UserRepo) GetProfilesByUser(ctx context.Context) ([]models.Profile, error) {

@@ -1,12 +1,12 @@
 package repository
 
 import (
+	"backend/models"
 	"context"
 	"github.com/google/uuid"
 	gormGIS "github.com/nferruzzi/gormgis"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
-	"ocall/backend/models"
 	"strconv"
 	"time"
 )
