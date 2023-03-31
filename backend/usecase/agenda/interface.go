@@ -3,71 +3,33 @@ package agenda
 import (
 	"context"
 	"github.com/google/uuid"
-	"ocall/app/entity"
+	gormGIS "github.com/nferruzzi/gormgis"
+	"ocall/backend/models"
+	"time"
 )
 
-type UseCase interface {
-	CreateApplication(
-		context context.Context, name string, status entity.ApplicationStatus,
-		performer entity.Performer, event entity.Event, act entity.Act,
-	) (entity.Application, error)
-	GetApplication(ctx context.Context, id uuid.UUID) (entity.Application, error)
-	GetApplicationsByEvent(ctx context.Context, event entity.Event) ([]entity.Application, error)
-	GetApplicationsByPerformer(ctx context.Context, performer entity.Performer) ([]entity.Application, error)
-	UpdateApplication(ctx context.Context, application entity.Application) error
-	DeleteApplication(ctx context.Context, id uuid.UUID) error
-
-	CreateEvent(
-		ctx context.Context, name, description string,
-		tags []entity.Tag, producer entity.Producer,
-		form entity.ApplicationForm,
-	) (entity.Event, error)
-	GetEvent(ctx context.Context, id uuid.UUID) (entity.Event, error)
-	AddPerformersToEvent(ctx context.Context, event entity.Event, performers []entity.Performer) error
-	GetEventsByProducer(ctx context.Context, producer entity.Producer) ([]entity.Event, error)
-	GetEventsByVenue(ctx context.Context, venue entity.Venue) ([]entity.Act, error)
-	UpdateEvent(ctx context.Context, event entity.Event) error
-	ChangeEventApplicationStatus(ctx context.Context, id uuid.UUID, status entity.EventApplicationStatus) error
-	ModifyActListForEvent(ctx context.Context, event entity.Event, acts []entity.Act) error
-	DeleteEvent(ctx context.Context, id uuid.UUID) error
-
-	CreateAct(
-		ctx context.Context, name, description string,
-		tags []entity.Tag, media []entity.Media,
-		form entity.ApplicationForm,
-	) (entity.Act, error)
-	GetActs(ctx context.Context, ids ...uuid.UUID) ([]entity.Act, error)
-	GetActsByPerformer(ctx context.Context, performer entity.Performer) ([]entity.Act, error)
-	GetConfirmedActsByEvent(ctx context.Context, event entity.Event) ([]entity.Act, error)
-	GetSavedActByProducer(ctx context.Context, producer entity.Producer) ([]entity.Act, error)
-	UpdateAct(ctx context.Context, act entity.Act) error
-	DeleteAct(ctx context.Context, id uuid.UUID) error
-}
-
 type Repository interface {
-	CreateApplication(ctx context.Context, application entity.Application) (uuid.UUID, error)
-	GetApplicationByID(ctx context.Context, id uuid.UUID) (entity.Application, error)
-	GetApplicationByEventID(ctx context.Context, id uuid.UUID) ([]entity.Application, error)
-	GetApplicationsByPerformerID(ctx context.Context, id uuid.UUID) ([]entity.Application, error)
-	UpdateApplication(ctx context.Context, application entity.Application) error
-	DeleteApplication(ctx context.Context, id uuid.UUID) error
-
-	CreateEvent(ctx context.Context, event entity.Event) (uuid.UUID, error)
-	GetEventByID(ctx context.Context, id uuid.UUID) (entity.Event, error)
-	AddApplicationsToEvent(ctx context.Context, event entity.Event, performers []entity.Performer) error
-	GetEventsByProducerID(ctx context.Context, id uuid.UUID) ([]entity.Event, error)
-	GetEventsByPerformerID(ctx context.Context, id uuid.UUID) ([]entity.Event, error)
-	GetEventsByVenueID(ctx context.Context, id uuid.UUID) ([]entity.Event, error)
-	UpdateEvent(ctx context.Context, event entity.Event) error
-	ChangeEventApplicationStatus(ctx context.Context, id uuid.UUID, status entity.EventApplicationStatus) error
-	ModifyActListForEvent(ctx context.Context, eventID uuid.UUID, acts []entity.Act) error
+	CreateEvent(ctx context.Context, event models.Event) (uuid.UUID, error)
+	GetEvent(ctx context.Context, id uuid.UUID) (models.Event, error)
+	UpdateEvent(ctx context.Context, event models.Event) error
 	DeleteEvent(ctx context.Context, id uuid.UUID) error
 
-	CreateAct(ctx context.Context, act entity.Act) (uuid.UUID, error)
-	GetActs(ctx context.Context, ids []uuid.UUID) ([]entity.Act, error)
-	GetActsByPerformerID(ctx context.Context, performerID uuid.UUID) ([]entity.Act, error)
-	GetConfirmedActsByEventID(ctx context.Context, eventID uuid.UUID) ([]entity.Act, error)
-	GetSavedActsByProducerID(ctx context.Context, producerID uuid.UUID) ([]entity.Act, error)
-	UpdateAct(ctx context.Context, act entity.Act) error
-	DeleteAct(ctx context.Context, id uuid.UUID) error
+	CreateApplication(ctx context.Context, application models.Application) (uuid.UUID, error)
+	GetApplication(ctx context.Context, id uuid.UUID) (models.Application, error)
+	UpdateApplication(ctx context.Context, application models.Application) error
+	DeleteApplication(ctx context.Context, id uuid.UUID) error
+
+	GetEventsByProducer(ctx context.Context, producerID uuid.UUID) ([]models.Event, error)
+	GetEventsByPerformer(ctx context.Context, performerID uuid.UUID) ([]models.Event, error)
+	GetAllEvents(ctx context.Context, startTime time.Time, endTime time.Time, centerPoint gormGIS.GeoPoint, distanceKM float32) ([]models.Event, error)
+	GetApplicationsByPerformer(ctx context.Context, performerID uuid.UUID) ([]models.Application, error)
+	GetApplicationsByProducer(ctx context.Context, producerID uuid.UUID) ([]models.Application, error)
+
+	SaveApplication(ctx context.Context, applicationID uuid.UUID) error
+	UnSaveApplication(ctx context.Context, applicationID uuid.UUID) error
+	UpdateApplicationStatus(ctx context.Context, applicationID uuid.UUID, status models.ApplicationStatus) error
+	UpdateEventApplicationStatus(ctx context.Context, eventID uuid.UUID, status models.EventApplicationStatus) error
+
+	CreateTag(ctx context.Context, tag models.Tag) error
+	DeleteTag(ctx context.Context, tag models.Tag) error
 }
