@@ -1,17 +1,14 @@
 package models
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
-	gormGIS "github.com/nferruzzi/gormgis"
+	"github.com/nferruzzi/gormGIS"
 	"strings"
 )
 
 const FirebaseContextKey string = "firebase_context_key"
-
-func GetFirebaseIDFromContext(ctx context.Context) string {
-	return ctx.Value(FirebaseContextKey).(string)
-}
 
 type ProfileType string
 
@@ -21,11 +18,29 @@ const (
 	VenueType                 = "venue"
 )
 
+func (t *ProfileType) UnmarshallJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	switch s {
+	case "producer":
+		*t = ProducerType
+	case "performer":
+		*t = PerformerType
+	case "venue":
+		*t = VenueType
+	default:
+		return fmt.Errorf("unrecognized profile type %s. Allowed: producer, performer, venue", s)
+	}
+	return nil
+}
+
 type UserID struct {
 	Model
 	FirebaseId  string
 	Permissions Permission
-	ProfileId   uuid.UUID
+	ProfileId   uuid.UUID `json:"-"`
 }
 
 type Profile struct {
@@ -33,7 +48,7 @@ type Profile struct {
 	Name        string `json:"name,nonempty" gorm:"notnull"`
 	ProfileType `json:"type"`
 	Location    *gormGIS.GeoPoint
-	UserIDs     []UserID `json:"user_ids" gorm:"foreignKey:ProfileId"`
+	UserIDs     []UserID `json:"-" gorm:"foreignKey:ProfileId"`
 }
 
 func ParseProfile(s string) (ProfileType, bool) {

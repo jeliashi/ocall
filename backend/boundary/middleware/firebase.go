@@ -18,21 +18,25 @@ func (m *FirebaseMiddleware) AuthMiddleware(c *gin.Context) {
 
 	if strings.HasPrefix(authHeader, "Basic") {
 		if strings.Split(authHeader, " ")[1] != m.SuperUserEncoded {
-			c.JSON(http.StatusForbidden, "invalid basic auth")
+			c.AbortWithStatusJSON(http.StatusForbidden, "invalid basic auth")
+			return
+		} else {
+			c.Next()
 			return
 		}
 		//base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
 	} else if strings.HasPrefix(authHeader, "Bearer") {
 		token := strings.Split(authHeader, " ")[1]
 		if firebaseToken, err := m.Client.VerifyIDToken(c, token); err != nil {
-			c.JSON(http.StatusUnauthorized, "unable to verify id token")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, "unable to verify id token")
 			return
 		} else {
 			c.Set(models.FirebaseContextKey, firebaseToken.UID)
+			c.Next()
+			return
 		}
 	} else {
-		c.Status(http.StatusUnauthorized)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	c.Next()
 }

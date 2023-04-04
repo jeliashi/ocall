@@ -2,129 +2,143 @@ package handler
 
 import (
 	"backend/boundary/middleware"
+	"backend/boundary/presenter"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 
-	"backend/boundary/presentor"
 	"backend/models"
 	"backend/usecase/users"
 )
 
 type UserController struct {
-	UserService users.Service
+	userService users.Service
 }
 
-// @description Create a new Profile type associated with firebase user
-// @accept json
-// @produce json
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Bearer
-// @Param data body models.Profile true "input profile model"
-// @Success 201 object presenter.IdResponse "Successful Profile Created"
-// @Failure 400 object presenter.ErrorResponse "StatusBadRequest"
-// @Failure 422 object presenter.ErrorResponse "StatusUnprocessableEntity"
+// @Summary Create a new profile
+// @Description Create a new profile
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Security BearerToken
+// @Param profile body models.Profile true "Profile object to be created"
+// @Success 201 {object} presenter.IdResponse
+// @Failure 400 {object} presenter.ErrorResponse
+// @Failure 500 {object} presenter.ErrorResponse
+// @Router /profiles [post]
 func (u *UserController) createProfile(c *gin.Context) {
-	pType, ok := models.ParseProfile(c.Param("pType"))
-	if !ok {
-		c.Status(http.StatusUnauthorized)
+	var profile models.Profile
+	if err := c.Bind(&profile); err != nil {
+		presenter.HandleErr(c, err)
 		return
 	}
-	var input models.Profile
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, presentor.ErrorResponse{Error: err.Error()})
-		return
-	}
-	input.ProfileType = pType
-
-	firebaseID := models.GetFirebaseIDFromContext(c)
-	if firebaseID != "" {
-		input.UserIDs = []models.UserID{{FirebaseId: firebaseID, Permissions: models.Admin}}
+	if firebaseId, exists := c.Get(models.FirebaseContextKey); exists {
+		profile.UserIDs = []models.UserID{{FirebaseId: firebaseId.(string), Permissions: models.Admin}}
 	}
 
-	id, err := u.UserService.CreateProfile(c, input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, presentor.ErrorResponse{Error: err.Error()})
+	if id, err := u.userService.CreateProfile(c, profile); err != nil {
+		presenter.HandleErr(c, err)
 		return
+	} else {
+		c.JSON(http.StatusCreated, gin.H{"id": id.String()})
 	}
-	c.JSON(http.StatusCreated, presentor.IdResponse{Id: id.String()})
 }
 
-// @description Get a Profile type by id
-// @produce json
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Bearer
-// @Success 200 object models.Profile
-// @Failure 400 object presenter.ErrorResponse "StatusBadRequest"
-// @Failure 404 object presenter.ErrorResponse "StatusNotFound"
-// @Failure 422 object presenter.ErrorResponse "StatusUnprocessableEntity"
+// @Summary Get a profile by ID
+// @Description Returns the profile with the specified ID
+// @ID get-profile-by-id
+// @Tags profiles
+// @Produce json
+// @Security BearerToken
+// @Param id path string true "Profile ID"
+// @Success 200 {object} models.Profile
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /profiles/{id} [get]
 func (u *UserController) getProfile(c *gin.Context) {
-	profileID := c.Value("id").(uuid.UUID)
-
-	profile, err := u.UserService.GetProfileByID(c, profileID)
+	id, err := GetId(c)
 	if err != nil {
-		code, response := presentor.HandleErr(err)
-		c.JSON(code, response)
+		presenter.HandleErr(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, profile)
-	return
+	if profile, exists := c.Get("profile"); exists {
+		c.JSON(http.StatusOK, profile)
+		return
+	}
+	if profile, err := u.userService.GetProfileByID(c, id); err != nil {
+		presenter.HandleErr(c, err)
+		return
+	} else {
+		c.JSON(http.StatusOK, profile)
+	}
 }
 
-// @description Update a Profile type by id
-// @accept json
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Bearer
-// @Success 202
-// @Failure 400 object presenter.ErrorResponse "StatusBadRequest"
-// @Failure 404 object presenter.ErrorResponse "StatusNotFound"
-// @Failure 422 object presenter.ErrorResponse "StatusUnprocessableEntity"
-func (u *UserController) patchProfile(c *gin.Context) {
-	var input models.Profile
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, presentor.ErrorResponse{Error: err.Error()})
+// Update a profile by ID
+// PATCH /profiles/:id
+// @Summary Update a profile by ID
+// @Description Update a profile by ID
+// @Tags Profiles
+// @Accept json
+// @Produce json
+// @Security BearerToken
+// @Param id path string true "Profile ID"
+// @Param application body models.Profile true "Profile object"
+// @Success 200 {object} models.Profile
+// @Failure 400 {object} presenter.ErrorResponse
+// @Failure 401 {object} presenter.ErrorResponse
+// @Failure 403 {object} presenter.ErrorResponse
+// @Failure 404 {object} presenter.ErrorResponse
+// @Router /events/{id} [patch]
+func (u *UserController) updateProfile(c *gin.Context) {
+	var profile models.Profile
+	if err := c.Bind(&profile); err != nil {
+		presenter.HandleErr(c, err)
 		return
 	}
-	input.ID = c.Value("id").(uuid.UUID)
-
-	if err := u.UserService.UpdateProfile(c, input); err != nil {
-		code, message := presentor.HandleErr(err)
-		c.JSON(code, message)
+	if profile, err := u.userService.UpdateProfile(c, profile); err != nil {
+		presenter.HandleErr(c, err)
 		return
+	} else {
+		c.JSON(http.StatusOK, profile)
 	}
-	c.Status(http.StatusAccepted)
-	return
 }
 
-// @description Delete a Profile type by id
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Bearer
-// @Success 200
-// @Failure 400 object presenter.ErrorResponse "StatusBadRequest"
-// @Failure 404 object presenter.ErrorResponse "StatusNotFound"
-// @Failure 422 object presenter.ErrorResponse "StatusUnprocessableEntity"
+// Delete a profile by ID
+// DELETE /profiles/:id
+// @Summary Delete a profile by ID
+// @Description Delete a profile by ID
+// @Tags Profiles
+// @Param id path string true "Profile ID"
+// @Security BearerToken
+// @Success 204 "No Content"
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /applications/{id} [delete]
 func (u *UserController) deleteProfile(c *gin.Context) {
-	if err := u.UserService.DeleteProfile(c, c.Value("id").(uuid.UUID)); err != nil {
-		code, message := presentor.HandleErr(err)
-		c.JSON(code, message)
+	id, err := GetId(c)
+	if err != nil {
+		presenter.HandleErr(c, err)
 		return
 	}
-	c.Status(http.StatusOK)
-	return
+	if err := u.userService.DeleteProfile(c, id); err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
 }
 
-func (u *UserController) RegisterProfileEndpoints(
+func CreateUserController(
+	service users.Service,
 	router *gin.Engine,
-	f *middleware.FirebaseMiddleware,
-	p *middleware.PermissionsMiddleware,
-) {
-	router.Use(f.AuthMiddleware)
-	router.POST("/:pType", u.createProfile)
-	router.GET("/:id/", p.AllowedUser, u.getProfile)
-	router.PATCH("/:id/patch", p.AllowedUser, u.patchProfile)
-	router.DELETE("/:id/delete", p.AllowedUser, u.deleteProfile)
+	firebase middleware.FirebaseMiddleware,
+	permissionsMiddleware middleware.PermissionsMiddleware,
+) UserController {
+	handler := UserController{userService: service}
+	router.Use(firebase.AuthMiddleware)
+	router.POST("/profiles", handler.createProfile)
+	router.GET("/profile/:id", handler.getProfile)
+	router.PATCH("/profiles/:id", permissionsMiddleware.ProfileModifier, handler.updateProfile)
+	router.DELETE("/profiles/:id", permissionsMiddleware.ProfileModifier, handler.deleteProfile)
+	return handler
 }

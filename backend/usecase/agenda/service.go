@@ -3,9 +3,8 @@ package agenda
 import (
 	"backend/models"
 	"context"
-	"fmt"
 	"github.com/google/uuid"
-	gormGIS "github.com/nferruzzi/gormgis"
+	"github.com/nferruzzi/gormGIS"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -33,11 +32,13 @@ func (s *Service) GetEvent(ctx context.Context, id uuid.UUID) (models.Event, err
 	}
 	return event, nil
 }
-func (s *Service) UpdateEvent(ctx context.Context, event models.Event) error {
-	if err := s.repo.UpdateEvent(ctx, event); err != nil {
-		return errors.Wrap(err, "db error")
+func (s *Service) UpdateEvent(ctx context.Context, event models.Event) (models.Event, error) {
+	if out, err := s.repo.UpdateEvent(ctx, event); err != nil {
+		return event, errors.Wrap(err, "db error")
+	} else {
+		return out, nil
 	}
-	return nil
+
 }
 func (s *Service) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.DeleteEvent(ctx, id); err != nil {
@@ -59,11 +60,12 @@ func (s *Service) GetApplication(ctx context.Context, id uuid.UUID) (models.Appl
 	}
 	return application, nil
 }
-func (s *Service) UpdateApplication(ctx context.Context, application models.Application) error {
-	if err := s.repo.UpdateApplication(ctx, application); err != nil {
-		return errors.Wrap(err, "db error")
+func (s *Service) UpdateApplication(ctx context.Context, application models.Application) (models.Application, error) {
+	if out, err := s.repo.UpdateApplication(ctx, application); err != nil {
+		return application, errors.Wrap(err, "db error")
+	} else {
+		return out, nil
 	}
-	return nil
 }
 func (s *Service) DeleteApplication(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.DeleteApplication(ctx, id); err != nil {
@@ -78,87 +80,31 @@ func (s *Service) GetEventsByProducer(ctx context.Context, producerID uuid.UUID)
 	}
 	return events, nil
 }
-func (s *Service) GetEventsByPerformer(ctx context.Context, performerID uuid.UUID) ([]models.Event, error) {
-	events, err := s.repo.GetEventsByPerformer(ctx, performerID)
+
+func (s *Service) GetApplicationsByEvent(ctx context.Context, eventID uuid.UUID) ([]models.Application, error) {
+	applications, err := s.repo.GetApplicationsByEvent(ctx, eventID)
 	if err != nil {
 		return nil, errors.Wrap(err, "db error")
 	}
-	return events, nil
+	return applications, nil
 }
-func (s *Service) GetAllEvents(
-	ctx context.Context, startTime time.Time, endTime time.Time,
-	centerPoint gormGIS.GeoPoint, distanceKM float32,
-) ([]models.Event, error) {
-	events, err := s.repo.GetAllEvents(ctx, startTime, endTime, centerPoint, distanceKM)
-	if err != nil {
-		return nil, errors.Wrap(err, "db error")
-	}
-	return events, nil
-}
-func (s *Service) GetApplicationsByPerfomer(ctx context.Context, performerID uuid.UUID) ([]models.Application, error) {
+
+func (s *Service) GetApplicationsByPerformer(ctx context.Context, performerID uuid.UUID) ([]models.Application, error) {
 	applications, err := s.repo.GetApplicationsByPerformer(ctx, performerID)
 	if err != nil {
 		return nil, errors.Wrap(err, "db error")
 	}
 	return applications, nil
 }
-func (s *Service) SaveApplication(ctx context.Context, applicationID uuid.UUID) error {
-	application, err := s.repo.GetApplication(ctx, applicationID)
+func (s *Service) GetAllEvents(
+	ctx context.Context, startTime time.Time, endTime time.Time,
+	centerPoint gormGIS.GeoPoint, distanceKM float64,
+) ([]models.Event, error) {
+	events, err := s.repo.GetAllEvents(ctx, startTime, endTime, centerPoint, distanceKM)
 	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve application id %s", applicationID)
+		return nil, errors.Wrap(err, "db error")
 	}
-	if application.Saved {
-		return errors.New("application already saved")
-	}
-
-	if err := s.repo.SaveApplication(ctx, applicationID); err != nil {
-		return errors.Wrap(err, "unable to save application")
-	}
-	return nil
-}
-func (s *Service) UnSaveApplication(ctx context.Context, applicationID uuid.UUID) error {
-	application, err := s.repo.GetApplication(ctx, applicationID)
-	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve application id %s", applicationID)
-	}
-	if !application.Saved {
-		return errors.New("application already saved")
-	}
-
-	if err := s.repo.UnSaveApplication(ctx, applicationID); err != nil {
-		return errors.Wrap(err, "unable to un-save application")
-	}
-	return nil
-}
-func (s *Service) UpdateApplicationStatus(
-	ctx context.Context, applicationID uuid.UUID, status models.ApplicationStatus,
-) error {
-	application, err := s.repo.GetApplication(ctx, applicationID)
-	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve application %s", applicationID)
-	}
-	if application.Status == status {
-		return fmt.Errorf("application already has status %s", string(status))
-	}
-	if err := s.repo.UpdateApplicationStatus(ctx, applicationID, status); err != nil {
-		return errors.Wrap(err, "db error")
-	}
-	return nil
-}
-func (s *Service) UpdateEventApplicationStatus(
-	ctx context.Context, eventID uuid.UUID, status models.EventApplicationStatus,
-) error {
-	event, err := s.repo.GetEvent(ctx, eventID)
-	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve event %s", eventID)
-	}
-	if event.Status == status {
-		return fmt.Errorf("event already has status %s", string(status))
-	}
-	if err := s.repo.UpdateEventApplicationStatus(ctx, eventID, status); err != nil {
-		return errors.Wrap(err, "db error")
-	}
-	return nil
+	return events, nil
 }
 
 func (s *Service) CreateTag(ctx context.Context, tag models.Tag) (uint, error) {

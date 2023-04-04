@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"backend/boundary/presenter"
 	"backend/models"
 	"backend/usecase/agenda"
 	"backend/usecase/users"
@@ -10,88 +11,151 @@ import (
 	"net/http"
 )
 
+const ParamIdContextKey string = "contextId"
+
 type PermissionsMiddleware struct {
-	UService users.Service
-	AService agenda.Service
+	uService users.Service
+	aService agenda.Service
+}
+
+func NewPermissionsMiddleware(uService users.Service, aService agenda.Service) PermissionsMiddleware {
+	return PermissionsMiddleware{uService: uService, aService: aService}
 }
 
 func (m *PermissionsMiddleware) setID(c *gin.Context) (uuid.UUID, error) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, errors.Wrap(err, "unable to parse id").Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": errors.Wrap(err, "unable to parse id").Error()})
 		return uuid.Nil, errors.New("finished call")
 	}
-	c.Set("id", id)
+	c.Set(ParamIdContextKey, id)
 	return id, nil
 }
 
-func (m *PermissionsMiddleware) AllowedUser(c *gin.Context) {
-	id, err := m.setID(c)
+func (m *PermissionsMiddleware) ProfileModifier(c *gin.Context) {
+	profileId, err := m.setID(c)
 	if err != nil {
 		return
 	}
-	_, ok := c.Get(models.FirebaseContextKey)
-	profiles, err := m.UService.GetProfilesByUser(c)
-	var match = !ok
-	for _, p := range profiles {
-		if id == p.ID {
-			match = true
-			break
-		}
-	}
-	if !match {
-		c.Status(http.StatusForbidden)
+	firebaseId, exists := c.Get(models.FirebaseContextKey)
+	if !exists {
+		c.Next()
 		return
 	}
-	c.Next()
+
+	_users, err := m.uService.GetUsersByProfileId(c, profileId)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	for _, user := range _users {
+		if user.FirebaseId == firebaseId {
+			c.Next()
+			return
+		}
+	}
+
+	c.Status(http.StatusForbidden)
+	return
+
 }
 
 func (m *PermissionsMiddleware) ApplicationViewer(c *gin.Context) {
-	id, err := m.setID(c)
-	if err != nil {
+	firebaseID, exists := c.Get(models.FirebaseContextKey)
+	if !exists {
+		c.Next()
 		return
 	}
-	app, err := m.AService.GetApplication(c, id)
+	applicationId, err := m.setID(c)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	app, err := m.aService.GetApplication(c, applicationId)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	event, err := m.aService.GetEvent(c, app.EventRef)
 	if err != nil {
 		c.Next()
 	}
-	event, err := m.AService.GetEvent(c, app.EventRef)
+	appUsers, err := m.uService.GetUsersByProfileId(c, app.PerformerID)
 	if err != nil {
-		c.Next()
+		presenter.HandleErr(c, err)
+		return
 	}
-	_, ok := c.Get(models.FirebaseContextKey)
-	profiles, err := m.UService.GetProfilesByUser(c)
-	var match = !ok
-	for _, p := range profiles {
-		if (app.Performer.ID == p.ID) || (event.Producer.ID == p.ID) {
-			match = true
-			break
+	eventUsers, err := m.uService.GetUsersByProfileId(c, event.ProducerID)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	profileUsers := append(appUsers, eventUsers...)
+	for _, p := range profileUsers {
+		if p.FirebaseId == firebaseID {
+			c.Next()
+			return
 		}
 	}
-	if !match {
-		c.Status(http.StatusForbidden)
-		return
-	}
-	c.Next()
+	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"how": "did we get here?"})
 }
 
 func (m *PermissionsMiddleware) EventModifier(c *gin.Context) {
-	id, err := m.setID(c)
+	firebaseId, ok := c.Get(models.FirebaseContextKey)
+	if !ok {
+		c.Next()
+		return
+	}
+	eventId, err := m.setID(c)
 	if err != nil {
 		return
 	}
-	event, err := m.AService.GetEvent(c, id)
-	_, ok := c.Get(models.FirebaseContextKey)
-	profiles, err := m.UService.GetProfilesByUser(c)
-	var match = !ok
-	for _, p := range profiles {
-		if event.Producer.ID == p.ID {
-			match = true
-			break
+	event, err := m.aService.GetEvent(c, eventId)
+	profileUsers, err := m.uService.GetUsersByProfileId(c, event.ProducerID)
+	for _, p := range profileUsers {
+		if p.FirebaseId == firebaseId {
+			c.Next()
+			return
 		}
 	}
-	if !match {
-		c.Status(http.StatusForbidden)
+	c.Status(http.StatusForbidden)
+	return
+
+}
+
+func (m *PermissionsMiddleware) ApplicationModifier(c *gin.Context) {
+	firebaseId, exists := c.Get(models.FirebaseContextKey)
+	if !exists {
+		c.Next()
+		return
+	}
+	id, err := m.setID(c)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	app, err := m.aService.GetApplication(c, id)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	profileUsers, err := m.uService.GetUsersByProfileId(c, app.Performer.ID)
+	if err != nil {
+		presenter.HandleErr(c, err)
+		return
+	}
+	for _, u := range profileUsers {
+		if u.FirebaseId == firebaseId {
+			c.Next()
+			return
+		}
+	}
+	c.Status(http.StatusForbidden)
+}
+
+func (m *PermissionsMiddleware) Admin(c *gin.Context) {
+	if _, exists := c.Get(models.FirebaseContextKey); exists {
+		c.Status(http.StatusUnauthorized)
 		return
 	}
 	c.Next()
