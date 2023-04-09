@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/nferruzzi/gormGIS"
+	"gorm.io/gorm"
 	"strings"
 )
 
@@ -14,10 +15,20 @@ type ProfileType string
 
 const (
 	ProducerType  ProfileType = "producer"
-	PerformerType             = "performer"
-	VenueType                 = "venue"
+	PerformerType ProfileType = "performer"
+	VenueType     ProfileType = "venue"
 )
 
+func (ProfileType) GormDataType() string   { return "profile_type" }
+func (ProfileType) GormDBDataType() string { return "profile_type" }
+func (p ProfileType) String() string       { return string(p) }
+func AutoMigrateProfileType(db *gorm.DB) error {
+	if err := AutoMigrateEnumType("profile_type", db, ProducerType, PerformerType, VenueType); err != nil {
+		return err
+	}
+
+	return nil
+}
 func (t *ProfileType) UnmarshallJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -39,14 +50,14 @@ func (t *ProfileType) UnmarshallJSON(data []byte) error {
 type UserID struct {
 	Model
 	FirebaseId  string
-	Permissions Permission
-	ProfileId   uuid.UUID `json:"-"`
+	Permissions Permission `gorm:"type:permission;default:unknown"`
+	ProfileId   uuid.UUID  `json:"-" gorm:"type:uuid"`
 }
 
 type Profile struct {
 	Model
 	Name        string `json:"name,nonempty" gorm:"notnull"`
-	ProfileType `json:"type"`
+	ProfileType `json:"type" gorm:"type:profile_type;notnull"`
 	Location    *gormGIS.GeoPoint
 	UserIDs     []UserID `json:"-" gorm:"foreignKey:ProfileId"`
 }

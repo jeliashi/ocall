@@ -16,7 +16,7 @@ type UserController struct {
 
 // @Summary Create a new profile
 // @Description Create a new profile
-// @Tags profiles
+// @Tags Profiles
 // @Accept  json
 // @Produce  json
 // @Security BearerToken
@@ -46,14 +46,14 @@ func (u *UserController) createProfile(c *gin.Context) {
 // @Summary Get a profile by ID
 // @Description Returns the profile with the specified ID
 // @ID get-profile-by-id
-// @Tags profiles
+// @Tags Profiles
 // @Produce json
 // @Security BearerToken
 // @Param id path string true "Profile ID"
 // @Success 200 {object} models.Profile
-// @Failure 400 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Failure 400 {object} presenter.ErrorResponse
+// @Failure 404 {object} presenter.ErrorResponse
+// @Failure 500 {object} presenter.ErrorResponse
 // @Router /profiles/{id} [get]
 func (u *UserController) getProfile(c *gin.Context) {
 	id, err := GetId(c)
@@ -88,7 +88,7 @@ func (u *UserController) getProfile(c *gin.Context) {
 // @Failure 401 {object} presenter.ErrorResponse
 // @Failure 403 {object} presenter.ErrorResponse
 // @Failure 404 {object} presenter.ErrorResponse
-// @Router /events/{id} [patch]
+// @Router /profiles/{id} [patch]
 func (u *UserController) updateProfile(c *gin.Context) {
 	var profile models.Profile
 	if err := c.Bind(&profile); err != nil {
@@ -111,10 +111,10 @@ func (u *UserController) updateProfile(c *gin.Context) {
 // @Param id path string true "Profile ID"
 // @Security BearerToken
 // @Success 204 "No Content"
-// @Failure 401 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Router /applications/{id} [delete]
+// @Failure 401 {object} presenter.ErrorResponse
+// @Failure 403 {object} presenter.ErrorResponse
+// @Failure 404 {object} presenter.ErrorResponse
+// @Router /profiles/{id} [delete]
 func (u *UserController) deleteProfile(c *gin.Context) {
 	id, err := GetId(c)
 	if err != nil {
@@ -128,17 +128,16 @@ func (u *UserController) deleteProfile(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func CreateUserController(
+func RegisterUserController(
 	service users.Service,
-	router *gin.Engine,
+	router *gin.RouterGroup,
 	firebase middleware.FirebaseMiddleware,
 	permissionsMiddleware middleware.PermissionsMiddleware,
-) UserController {
+) {
 	handler := UserController{userService: service}
-	router.Use(firebase.AuthMiddleware)
-	router.POST("/profiles", handler.createProfile)
-	router.GET("/profile/:id", handler.getProfile)
-	router.PATCH("/profiles/:id", permissionsMiddleware.ProfileModifier, handler.updateProfile)
-	router.DELETE("/profiles/:id", permissionsMiddleware.ProfileModifier, handler.deleteProfile)
-	return handler
+	router.POST("/profiles", firebase.AuthMiddleware, handler.createProfile)
+	router.GET("/profile/:id", firebase.AuthMiddleware, handler.getProfile)
+	router.PATCH("/profiles/:id", firebase.AuthMiddleware, permissionsMiddleware.ProfileModifier, handler.updateProfile)
+	router.DELETE("/profiles/:id", firebase.AuthMiddleware, permissionsMiddleware.ProfileModifier, handler.deleteProfile)
+	//return handler
 }

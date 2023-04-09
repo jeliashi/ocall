@@ -4,6 +4,7 @@ import (
 	"backend/models"
 	"firebase.google.com/go/v4/auth"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -11,6 +12,10 @@ import (
 type FirebaseMiddleware struct {
 	SuperUserEncoded string
 	Client           *auth.Client
+}
+
+func NewFirebaseMiddleware(superUserString string, client *auth.Client) FirebaseMiddleware {
+	return FirebaseMiddleware{SuperUserEncoded: superUserString, Client: client}
 }
 
 func (m *FirebaseMiddleware) AuthMiddleware(c *gin.Context) {
@@ -25,6 +30,11 @@ func (m *FirebaseMiddleware) AuthMiddleware(c *gin.Context) {
 			return
 		}
 		//base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
+	} else if m.Client == nil {
+		log.Printf("no firebase token")
+		c.Set(models.FirebaseContextKey, "test")
+		c.Next()
+		return
 	} else if strings.HasPrefix(authHeader, "Bearer") {
 		token := strings.Split(authHeader, " ")[1]
 		if firebaseToken, err := m.Client.VerifyIDToken(c, token); err != nil {
@@ -39,4 +49,5 @@ func (m *FirebaseMiddleware) AuthMiddleware(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+
 }

@@ -67,7 +67,7 @@ func parseFloat(c *gin.Context, key string, result *float64) error {
 // GetAllEvents returns all events within a specified time range and distance from a center point.
 // @Summary Get all events
 // @Description Returns all events within a specified time range and distance from a center point.
-// @Tags events
+// @Tags Events
 // @Accept  json
 // @Produce  json
 // @Param start_time query string true "Start time of the range (RFC3339)"
@@ -308,7 +308,7 @@ func (a *AgendaController) deleteApplication(c *gin.Context) {
 // @Summary Get Events by Producer ID
 // @Description Returns the events belonging to producer
 // @ID get-events-by-producer-id
-// @Tags events
+// @Tags Events
 // @Produce json
 // @Security BearerToken
 // @Param id path string true "Producer ID"
@@ -336,7 +336,7 @@ func (a *AgendaController) getEventsByProducer(c *gin.Context) {
 // @Summary Get Applications by Event ID
 // @Description Returns the applications submitted to an event
 // @ID get-applications-by-event-id
-// @Tags applications
+// @Tags Applications
 // @Produce json
 // @Security BearerToken
 // @Param id path string true "Event ID"
@@ -362,7 +362,7 @@ func (a *AgendaController) getApplicationsByEvent(c *gin.Context) {
 // @Summary Get Applications by Performer ID
 // @Description Returns the applications submitted to an event
 // @ID get-applications-by-performer-id
-// @Tags applications
+// @Tags Applications
 // @Produce json
 // @Security BearerToken
 // @Param id path string true "Performer ID"
@@ -432,27 +432,25 @@ func (a *AgendaController) deleteTag(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func CreateAgendaHanlder(
+func RegisterAgendaHanlder(
 	service agenda.Service,
-	router *gin.Engine,
+	router *gin.RouterGroup,
 	firebaseMiddleware middleware.FirebaseMiddleware,
 	permissionsMiddleware middleware.PermissionsMiddleware,
-) AgendaController {
+) {
 	handler := AgendaController{service}
-	router.Use(firebaseMiddleware.AuthMiddleware)
-	router.POST("/events", handler.createEvent)
-	router.GET("/events/:id", handler.getEvent)
-	router.GET("/events", handler.getEventsByFilter)
-	router.GET("/producer/:id/events", handler.getEventsByProducer)
-	router.PATCH("/events/:id", permissionsMiddleware.EventModifier, handler.updateEvent)
-	router.DELETE("/events/:id", permissionsMiddleware.EventModifier, handler.deleteEvent)
-	router.POST("/applications", handler.createApplication)
-	router.GET("/applications/:id", permissionsMiddleware.ApplicationViewer, handler.getApplication)
-	router.GET("/events/:id/applications", permissionsMiddleware.EventModifier, handler.getApplicationsByEvent)
-	router.GET("/performer/:id/applications", permissionsMiddleware.ApplicationModifier, handler.getApplicationsByPerformer)
-	router.PATCH("/applications/:id", permissionsMiddleware.ApplicationModifier, handler.updateApplication)
-	router.DELETE("/applications/:id", permissionsMiddleware.ApplicationModifier, handler.deleteApplication)
-	router.POST("/tag/:name", permissionsMiddleware.Admin, handler.createTag)
-	router.POST("/tag/:name", permissionsMiddleware.Admin, handler.deleteTag)
-	return handler
+	router.POST("/events", firebaseMiddleware.AuthMiddleware, handler.createEvent)
+	router.GET("/events/:id", firebaseMiddleware.AuthMiddleware, handler.getEvent)
+	router.GET("/events", firebaseMiddleware.AuthMiddleware, handler.getEventsByFilter)
+	router.GET("/producer/:id/events", firebaseMiddleware.AuthMiddleware, handler.getEventsByProducer)
+	router.PATCH("/events/:id", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.EventModifier, handler.updateEvent)
+	router.DELETE("/events/:id", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.EventModifier, handler.deleteEvent)
+	router.POST("/applications", firebaseMiddleware.AuthMiddleware, handler.createApplication)
+	router.GET("/applications/:id", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.ApplicationViewer, handler.getApplication)
+	router.GET("/events/:id/applications", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.EventModifier, handler.getApplicationsByEvent)
+	router.GET("/performer/:id/applications", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.ApplicationModifier, handler.getApplicationsByPerformer)
+	router.PATCH("/applications/:id", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.ApplicationModifier, handler.updateApplication)
+	router.DELETE("/applications/:id", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.ApplicationModifier, handler.deleteApplication)
+	router.POST("/tag/:name", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.Admin, handler.createTag)
+	router.DELETE("/tag/:name", firebaseMiddleware.AuthMiddleware, permissionsMiddleware.Admin, handler.deleteTag)
 }

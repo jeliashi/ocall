@@ -27,6 +27,18 @@ const (
 	StatusUnknown  ApplicationStatus = "unknown"
 )
 
+func (ApplicationStatus) GormDataType() string   { return "application_status" }
+func (ApplicationStatus) GormDBDataType() string { return "application_status" }
+func (a ApplicationStatus) String() string       { return string(a) }
+func AutoMigrateApplicationStatus(db *gorm.DB) error {
+	if err := AutoMigrateEnumType(
+		"application_status", db, StatusPending, StatusOffered, StatusUnknown, StatusRejected, StatusAccepted,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
 func (a *ApplicationStatus) UnmarshallJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &a); err != nil {
@@ -59,6 +71,17 @@ const (
 	EventUnknown   EventApplicationStatus = "unknown"
 )
 
+func (EventApplicationStatus) GormDataType() string   { return "event_application_status" }
+func (EventApplicationStatus) GormDBDataType() string { return "event_application_status" }
+func (e EventApplicationStatus) String() string       { return string(e) }
+func AutoMigrateEventApplicationStatus(db *gorm.DB) error {
+	if err := AutoMigrateEnumType(
+		"event_application_status", db, EventOpen, EventUnknown, EventClosed, EventCancelled,
+	); err != nil {
+		return err
+	}
+	return nil
+}
 func (e *EventApplicationStatus) UnmarshallJson(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -86,8 +109,8 @@ type Application struct {
 	Name             string
 	Status           ApplicationStatus `gorm:"type:application_status;default:'unknown'" json:"application_status,default='unknown'"`
 	Performer        Profile           `gorm:"foreignKey:PerformerID"`
-	PerformerID      uuid.UUID         `json:"-" gorm:"performer_id"`
-	EventRef         uuid.UUID         `gorm:"event_ref"`
+	PerformerID      uuid.UUID         `json:"-" gorm:"performer_id,type:uuid"`
+	EventRef         uuid.UUID         `gorm:"event_ref;type:uuid"`
 	GoogleResponseID GoogleResponseID
 }
 
@@ -97,13 +120,13 @@ type Event struct {
 	Description  string
 	Tags         []Tag         `gorm:"many2many:event_tags;"`
 	Producer     Profile       `gorm:"foreignKey:ProducerID"`
-	ProducerID   uuid.UUID     `json:"-" gorm:"producer_id"`
+	ProducerID   uuid.UUID     `json:"-" gorm:"producer_id;type:uuid"`
 	Venue        *Profile      `gorm:"foreignKey:VenueID"`
-	VenueID      *uuid.UUID    `json:"-" gorm:"venue_id"`
+	VenueID      *uuid.UUID    `json:"-" gorm:"venue_id;type:uuid"`
 	Applications []Application `gorm:"foreignKey:EventRef"`
 	GoogleForm   GoogleFormID
 	Location     gormGIS.GeoPoint
-	Status       EventApplicationStatus `json:"application_status,default='unknown'" gorm:"type:event_application_status;default:'unknown'"`
+	Status       EventApplicationStatus `json:"application_status,default='unknown'" gorm:"type:event_application_status;default:unknown"`
 	Time         time.Time
 	ApplyByTime  *time.Time `json:"apply_by_time,omitempty"`
 	PayStructure string     `json:"pay_structure,omitempty"`
