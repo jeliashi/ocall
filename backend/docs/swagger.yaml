@@ -1,0 +1,781 @@
+basePath: /
+definitions:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  gormGIS.GeoPoint:
+    properties:
+      lat:
+        type: number
+      lng:
+        type: number
+    type: object
+  models.Application:
+    properties:
+      application_status:
+        $ref: '#/definitions/models.ApplicationStatus'
+      eventRef:
+        type: string
+      googleResponseID:
+        type: string
+      name:
+        type: string
+      performer:
+        $ref: '#/definitions/models.Profile'
+    type: object
+  models.ApplicationStatus:
+    enum:
+    - accepted
+    - rejected
+    - pending
+    - offered
+    - unknown
+    type: string
+    x-enum-varnames:
+    - StatusAccepted
+    - StatusRejected
+    - StatusPending
+    - StatusOffered
+    - StatusUnknown
+  models.Event:
+    properties:
+      application_status:
+        $ref: '#/definitions/models.EventApplicationStatus'
+      applications:
+        items:
+          $ref: '#/definitions/models.Application'
+        type: array
+      apply_by_time:
+        type: string
+      description:
+        type: string
+      googleForm:
+        type: string
+      location:
+        $ref: '#/definitions/gormGIS.GeoPoint'
+      name:
+        type: string
+      pay_structure:
+        type: string
+      producer:
+        $ref: '#/definitions/models.Profile'
+      tags:
+        items:
+          $ref: '#/definitions/models.Tag'
+        type: array
+      time:
+        type: string
+      venue:
+        $ref: '#/definitions/models.Profile'
+    type: object
+  models.EventApplicationStatus:
+    enum:
+    - draft
+    - open
+    - closed
+    - cancelled
+    - unknown
+    type: string
+    x-enum-varnames:
+    - EventDraft
+    - EventOpen
+    - EventClosed
+    - EventCancelled
+    - EventUnknown
+  models.Profile:
+    properties:
+      location:
+        $ref: '#/definitions/gormGIS.GeoPoint'
+      name:
+        type: string
+      type:
+        $ref: '#/definitions/models.ProfileType'
+    type: object
+  models.ProfileType:
+    enum:
+    - producer
+    - performer
+    - venue
+    type: string
+    x-enum-varnames:
+    - ProducerType
+    - PerformerType
+    - VenueType
+  models.Tag:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  presenter.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  presenter.IdResponse:
+    properties:
+      id:
+        format: string
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a sample API for MyService
+  title: MyService API
+  version: "1"
+paths:
+  /applications:
+    post:
+      consumes:
+      - application/json
+      description: Create a new application
+      parameters:
+      - description: Application object to be created
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Application'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/presenter.IdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Create a new application
+      tags:
+      - Applications
+  /applications/{id}:
+    delete:
+      description: Delete an application by ID
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Delete an application by ID
+      tags:
+      - Applications
+    get:
+      description: Returns the application with the specified ID
+      operationId: get-application-by-id
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Application'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Get an Application by ID
+      tags:
+      - Applications
+    patch:
+      consumes:
+      - application/json
+      description: Update an event by ID
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Application object
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Application'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Application'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Update an event by ID
+      tags:
+      - Applications
+  /event/{id}/applications:
+    get:
+      description: Returns the applications submitted to an event
+      operationId: get-applications-by-event-id
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Application'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Get Applications by Event ID
+      tags:
+      - Applications
+  /events:
+    get:
+      consumes:
+      - application/json
+      description: Returns all events within a specified time range and distance from
+        a center point.
+      parameters:
+      - description: Start time of the range (RFC3339)
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: End time of the range (RFC3339)
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: latitude of search point
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: longitude of search point
+        in: query
+        name: lon
+        required: true
+        type: number
+      - description: Distance from the center point in kilometers
+        in: query
+        name: distance_km
+        required: true
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Event'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      summary: Get all events
+      tags:
+      - Events
+    post:
+      consumes:
+      - application/json
+      description: Create a new event
+      parameters:
+      - description: Event object to be created
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.Event'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/presenter.IdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Create a new event
+      tags:
+      - Events
+  /events/{id}:
+    delete:
+      description: Delete an event by ID
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Delete an event by ID
+      tags:
+      - Events
+    get:
+      description: Returns the event with the specified ID
+      operationId: get-event-by-id
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Event'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Get an event by ID
+      tags:
+      - Events
+    patch:
+      consumes:
+      - application/json
+      description: Update an event by ID
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Event object
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.Event'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Event'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Update an event by ID
+      tags:
+      - Events
+  /performer/{id}/applications:
+    get:
+      description: Returns the applications submitted to an event
+      operationId: get-applications-by-performer-id
+      parameters:
+      - description: Performer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Application'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Get Applications by Performer ID
+      tags:
+      - Applications
+  /producer/{id}/events:
+    get:
+      description: Returns the events belonging to producer
+      operationId: get-events-by-producer-id
+      parameters:
+      - description: Producer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Event'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Get Events by Producer ID
+      tags:
+      - Events
+  /profiles:
+    post:
+      consumes:
+      - application/json
+      description: Create a new profile
+      parameters:
+      - description: Profile object to be created
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/models.Profile'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/presenter.IdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Create a new profile
+      tags:
+      - Profiles
+  /profiles/{id}:
+    delete:
+      description: Delete a profile by ID
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Delete a profile by ID
+      tags:
+      - Profiles
+    get:
+      description: Returns the profile with the specified ID
+      operationId: get-profile-by-id
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Profile'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Get a profile by ID
+      tags:
+      - Profiles
+    patch:
+      consumes:
+      - application/json
+      description: Update a profile by ID
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Profile object
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Profile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Profile'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BearerToken: []
+      summary: Update a profile by ID
+      tags:
+      - Profiles
+  /tag/{name}:
+    delete:
+      description: Delete a tag
+      parameters:
+      - description: Event object to be created
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.Event'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/presenter.IdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a tag
+      tags:
+      - Tags
+    post:
+      description: Create a new tag
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/presenter.IdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create a new tag
+      tags:
+      - Tags
+swagger: "2.0"
