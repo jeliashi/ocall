@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "177724858605",
+    "project_id": "ocall-7fc83",
+    "storage_bucket": "ocall-7fc83.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177724858605:android:71cf9f32a4893b4d6b6ce4",
+        "android_client_info": {
+          "package_name": "com.example.ocall_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "177724858605-5bggslrqd0s52ld3dv3di9qu7dhqh4db.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOQxdyUDGqEh60zHsubGos5v3nBLG_KLs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "177724858605-5bggslrqd0s52ld3dv3di9qu7dhqh4db.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
