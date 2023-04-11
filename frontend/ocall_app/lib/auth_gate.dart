@@ -22,7 +22,7 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        return const HomeScreen();
+        return HomeScreen();
       },
     );
   }
